@@ -1,0 +1,43 @@
+#%RAML 1.0
+title: Example REST API
+version: 'v1'
+baseUri: 'https://example.com/api/{version}'
+mediaType: application/json
+protocols:
+  - HTTPS
+  - HTTP
+types:
+  Role:
+    type: string
+    enum: [guest, admin]
+  ImageOutput:
+    properties:
+      url: string
+  AccountOutput:
+    properties:
+      login: string
+      name:
+        type: string
+        required: false
+      avatar: ImageOutput
+      roles: Role[]
+      userip: string
+  PingOutput:
+    properties:
+      name: string
+      version: string
+      latency: object
+/ping:
+  get:
+    responses:
+      200:
+        body:
+          application/json:
+            type: PingOutput
+/account:
+    get:
+      responses:
+        200:
+          body:
+            application/json:
+              type: AccountOutput
