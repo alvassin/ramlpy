@@ -340,7 +340,7 @@ class DateTime(Any):
 
     __slots__ = 'format',
 
-    def __init__(self, *, format: DateFormat = None, **kwargs):
+    def __init__(self, *, format: DateFormat = DateFormat.rfc3339, **kwargs):
         super().__init__(**kwargs)
         self.format = format
 
