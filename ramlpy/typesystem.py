@@ -152,11 +152,12 @@ class String(Any):
 
     @classmethod
     def get_params_for_derived_class(cls, parent_types):
-        params = {
+        params = super().get_params_for_derived_class(parent_types)
+        params.update({
             'min_length': cls.MIN_LENGTH,
             'max_length': cls.MAX_LENGTH,
             'pattern': None
-        }
+        })
 
         for parent_type in parent_types:
             parent_min_length = getattr(parent_type, 'min_length',

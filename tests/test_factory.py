@@ -1,7 +1,10 @@
+import pytest
+
+from ramlpy.exc import RAMLTypeDefError
 from ramlpy.typesystem import (
-    Any, Nil, Boolean, String, Integer, Number, Array, Object, DateOnly,
-    DateTime, DateTimeOnly, File, TimeOnly, Registry,
-    Union)
+    Any, Array, Boolean, DateOnly, DateTime, DateTimeOnly, File, Integer,
+    Nil, Number, Object, Registry, String, TimeOnly, Union
+)
 
 
 def test_simple_builtin_types(registry: Registry):
@@ -21,38 +24,38 @@ def test_simple_builtin_types(registry: Registry):
     assert type(registry.factory('object')) is Object
 
 
-def test_array_types(registry: Registry):
+def test_array_type(registry: Registry):
     assert type(registry.factory('[]')) is Array
 
-    str_array = registry.factory('string[]')
-    assert type(str_array) is Array
-    assert type(str_array.items) is String
+    item = registry.factory('string[]')
+    assert type(item) is Array
+    assert type(item.items) is String
 
-    str_array = registry.factory('number[][]')
-    assert type(str_array) is Array
-    assert type(str_array.items) is Array
-    assert type(str_array.items.items) is Number
+    item = registry.factory('number[][]')
+    assert type(item) is Array
+    assert type(item.items) is Array
+    assert type(item.items.items) is Number
 
 
-def test_union(registry: Registry):
+def test_union_type(registry: Registry):
     item = registry.factory('string | nil')
     assert type(item) is Union
-    assert set([member.DEFINITION for member in item.members]) == {
-        'string', 'nil'
-    }
+    assert {'string', 'nil'} == set([
+        member.DEFINITION for member in item.members
+    ])
 
 
-def test_custom(registry: Registry):
+def test_user_types(registry: Registry):
+    registry.register('Login', {'type': 'string', 'min_length': 4})
     registry.register('User', {
         'type': 'object',
-        'properties': {
-            'first': 'string',
-            'last': 'string'
-        }
+        'properties': {'name': 'string', 'login': 'Login'}
     })
 
-    user2 = registry.factory('User')
-    assert type(user2) is Object
+    item = registry.factory('User')  # type: Object
+    assert type(item) is Object
+    assert type(item.properties['name']) is String
+    assert type(item.properties['login']) is String
 
 
 def test_multiple_inheritance(registry: Registry):
@@ -64,22 +67,28 @@ def test_multiple_inheritance(registry: Registry):
     assert item.maximum == 6
 
 
-def test_multiple_inheritance_string(registry: Registry):
+def test_multiple_inherited_string_facets(registry: Registry):
     registry.register('Any', {'type': 'any'})
-    registry.register(
-        'Str1', {'type': 'string', 'min_length': 2, 'max_length': 10}
-    )
-    registry.register(
-        'Str2', {'type': 'string', 'min_length': 4, 'max_length': 6}
-    )
+    registry.register('Str1', {
+        'type': 'string', 'min_length': 2, 'max_length': 10
+    })
+    registry.register('Str2', {
+        'type': 'string', 'min_length': 4, 'max_length': 6
+    })
     item = registry.factory('Any, Str1, Str2')  # type: String
     assert type(item) is String
     assert item.min_length == 4
     assert item.max_length == 6
 
 
-def test_enum_derived(registry: Registry):
-    registry.register('T1', {'enum': ['one', 'two']})
-    registry.register('T2', {'enum': ['two', 'three']})
-    t3 = registry.factory('T1, T2')
-    assert t3.enum == {'two'}
+def test_multiple_inherited_enum_facet(registry: Registry):
+    registry.register('Type1', {'enum': ['one', 'two']})
+    registry.register('Type2', {'enum': ['two', 'three']})
+    registry.register('Type3', {'enum': ['zero', 'two']})
+    registry.register('Type4', {'enum': ['zero', 'three']})
+
+    item = registry.factory('Type1, Type2, Type3, string')
+    assert item.enum == {'two'}
+
+    with pytest.raises(RAMLTypeDefError):
+        registry.factory('Type1, Type4')
