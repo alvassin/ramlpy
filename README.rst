@@ -1,7 +1,11 @@
-ramlpy
-======
+RAML parsing library for python
+===============================
 
-RAML parsing library for python at early dev stage.
+.. image:: https://coveralls.io/repos/github/alvassin/ramlpy/badge.svg?branch=master
+    :target: https://coveralls.io/github/alvassin/ramlpy
+    :alt: Coveralls
+
+
 
 
 Versioning
