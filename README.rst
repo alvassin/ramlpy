@@ -5,7 +5,9 @@ RAML parsing library for python
     :target: https://coveralls.io/github/alvassin/ramlpy
     :alt: Coveralls
 
-
+.. image:: https://travis-ci.org/alvassin/ramlpy.svg
+    :target: https://travis-ci.org/alvassin/ramlpy
+    :alt: Travis CI
 
 
 Versioning
