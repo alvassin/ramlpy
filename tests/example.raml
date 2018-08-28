@@ -35,9 +35,12 @@ types:
           application/json:
             type: PingOutput
 /account:
-    get:
-      responses:
-        200:
-          body:
-            application/json:
-              type: AccountOutput
+  get:
+    responses:
+      200:
+        body:
+          application/json:
+            type: AccountOutput
+
+/some-url:
+  get:

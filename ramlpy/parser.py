@@ -3,6 +3,7 @@ from collections import OrderedDict
 import yaml
 from ramlpy import typesystem
 from ramlpy.exc import RAMLError
+from ramlpy.typesystem import Registry
 from ramlpy.utils import snake_case
 from yarl import URL
 
@@ -41,19 +42,22 @@ def parse_raml_version(header: str) -> str:
     return chunks[1]
 
 
-def parse_method(data, registry):
+def parse_method(data, registry: Registry):
     result = {}
-    for item, value in data.items():
-        if item == 'is':
-            result['is_'] = value
-        elif item == 'body':
-            if 'application/json' in value:
-                value = registry.factory(
-                    data['body']['application/json']['type']
-                )
-                result['body'] = value
-        else:
-            result[snake_case(item)] = value
+
+    if isinstance(data, dict):
+        for item, value in data.items():
+            if item == 'is':
+                result['is_'] = value
+            elif item == 'body':
+                if 'application/json' in value:
+                    value = registry.factory(
+                        data['body']['application/json']['type']
+                    )
+                    result['body'] = value
+            # FIXME: do not parse responses for a while
+            else:
+                result[snake_case(item)] = value
 
     return Method(**result)
 
@@ -139,6 +143,18 @@ class Resource:
         self.methods = methods
         self.resources = resources
         self.uri_parameters = uri_parameters
+
+
+class Response:
+    def __init__(
+        self, *,
+        description: str = None,
+        headers=None,
+        body=None
+    ):
+        self.description = description
+        self.headers = headers
+        self.body = body
 
 
 def parse_resource(resource_name, data, registry):
