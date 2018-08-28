@@ -99,3 +99,16 @@ def test_multiple_inherited_enum_facet(registry: Registry):
 
     with pytest.raises(RAMLTypeDefError):
         registry.factory('Type1, Type4')
+
+def test_object_optional_properties(registry: Registry):
+    item = registry.factory({
+        'properties': {
+            'login': 'string',
+            'name?': 'string',
+            'question??': 'string'
+        }
+    })
+
+    assert item.properties['login'].required is True
+    assert item.properties['name'].required is False
+    assert item.properties['question?'].required is False

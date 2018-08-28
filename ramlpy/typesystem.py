@@ -685,13 +685,17 @@ class Registry:
 
     def factory(
         self,
-        definition: typing.Union[TypeDefExpr, TypeDefStruct]
+        definition: typing.Union[TypeDefExpr, TypeDefStruct],
+        extra_kwargs=None
     ) -> Any:
         """
         Instantiate data type from definition.
         Definition may be RAML type expression or dict.
         """
         definition = self.normalize_definition(definition)
+        if extra_kwargs:
+            definition.update(extra_kwargs)
+
         kwargs = {
             snake_case(key): value
             for key, value in definition.items()
@@ -710,7 +714,15 @@ class Registry:
         if type_class is Object and 'properties' in definition:
             kwargs['properties'] = {}
             for prop_name, prop_val in definition['properties'].items():
-                kwargs['properties'][prop_name] = self.factory(prop_val)
+                extra_kwargs = {}
+                if prop_name[-1] == '?':
+                    extra_kwargs['required'] = False
+                    prop_name = prop_name[:-1]
+
+                kwargs['properties'][prop_name] = self.factory(
+                    definition=prop_val,
+                    extra_kwargs=extra_kwargs
+                )
 
         return type_class(**{**type_kwargs, **kwargs})
 
