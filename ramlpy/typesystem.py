@@ -492,6 +492,12 @@ class Object(Any):
                 )
             )
 
+    def apply_defaults(self, value: typing.Dict[str, typing.Any]):
+        for name, property in self.properties.items():
+            if value.get(name) is None and property.default is not None:
+                value[name] = property.default
+        return value
+
 
 class Union(Any):
     DEFINITION = None
