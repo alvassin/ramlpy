@@ -9,6 +9,18 @@ RAML parsing library for python
     :target: https://travis-ci.org/alvassin/ramlpy
     :alt: Travis CI
 
+.. image:: https://img.shields.io/pypi/v/ramlpy.svg
+    :target: https://pypi.python.org/pypi/ramlpy/
+    :alt: Latest Version
+
+.. image:: https://img.shields.io/pypi/wheel/ramlpy.svg
+    :target: https://pypi.python.org/pypi/ramlpy/
+
+.. image:: https://img.shields.io/pypi/pyversions/ramlpy.svg
+    :target: https://pypi.python.org/pypi/ramlpy/
+
+.. image:: https://img.shields.io/pypi/l/ramlpy.svg
+    :target: https://pypi.python.org/pypi/ramlpy/
 
 Versioning
 ==========
