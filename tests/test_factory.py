@@ -25,7 +25,9 @@ def test_simple_builtin_types(registry: Registry):
 
 
 def test_array_type(registry: Registry):
-    assert type(registry.factory('[]')) is Array
+    item = registry.factory('[]')
+    assert type(item) is Array
+    assert item.items is None
 
     item = registry.factory('string[]')
     assert type(item) is Array
@@ -35,6 +37,11 @@ def test_array_type(registry: Registry):
     assert type(item) is Array
     assert type(item.items) is Array
     assert type(item.items.items) is Number
+
+    registry.register('Login', 'string')
+    item = registry.factory('Login[]')
+    assert type(item) is Array
+    assert type(item.items) is String
 
 
 def test_union_type(registry: Registry):
