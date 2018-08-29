@@ -297,7 +297,7 @@ class Integer(Number):
         super().__init__(**kwargs)
 
     def validate(self, value):
-        Any.validate(self, value)
+        super().validate(value)
         if value is not None and type(value) is not int:
             raise RAMLValidationError('Value is expected to be integer')
 
