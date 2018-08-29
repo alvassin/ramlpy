@@ -3,7 +3,7 @@ import pytest
 from ramlpy.exc import RAMLValidationError
 from ramlpy.typesystem import (
     Any, Boolean, String,
-    Number, Integer, Union, Array, Object)
+    Number, Integer, Union, Array, Object, Registry)
 
 
 def test_any_type():
@@ -108,10 +108,7 @@ def test_object_type():
         'gender': Any(enum=['male', 'female', 'by agreement of the parties'])
     })
 
-    item.validate({
-        'name': 'John',
-        'gender': 'male'
-    })
+    item.validate({'name': 'John', 'gender': 'male'})
 
     with pytest.raises(RAMLValidationError):
         item.validate([])
@@ -121,6 +118,27 @@ def test_object_type():
 
     with pytest.raises(RAMLValidationError):
         item.validate('some string')
+
+
+def test_derived_object_type(registry: Registry):
+    registry.register('Human', {
+        'properties': {'name': 'string', 'age': 'integer'}
+    })
+
+    adult = registry.factory({
+        'type': 'Human',
+        'properties': {'skills': 'string[]'}
+    })
+
+    with pytest.raises(RAMLValidationError):
+        adult.validate({'skills': ['programming', 'driving car']})
+
+    # FIXME:
+    # item = registry.factory({
+    #     'type': 'Human',
+    #     'properties': {'age': 'string'}
+    # })
+    # print(item)
 
 
 def test_union_type():

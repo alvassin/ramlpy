@@ -50,6 +50,9 @@ class Any:
             )
 
     def get_definition(self) -> typing.Dict[str, typing.Any]:
+        """
+        Returns all properties data type have from all superclasses
+        """
         slots = chain.from_iterable(
             getattr(cls, '__slots__', [])
             for cls in self.__class__.__mro__
@@ -62,6 +65,9 @@ class Any:
 
     @classmethod
     def get_params_for_derived_class(cls, parent_types):
+        """
+        Returns properties, that must be present in derived types
+        """
         enum = None
         for parent_type in parent_types:
             parent_enum = getattr(parent_type, 'enum', None)
@@ -254,12 +260,13 @@ class Number(Any):
 
     @classmethod
     def get_params_for_derived_class(cls, parent_types):
-        params = {
+        params = super().get_params_for_derived_class(parent_types)
+        params.update({
             'minimum': None,
             'maximum': None,
             'format': None,
             'multiple_of': None,
-        }
+        })
 
         for parent_type in parent_types:
             if hasattr(parent_type, 'minimum'):
@@ -498,6 +505,37 @@ class Object(Any):
                 value[name] = property.default
         return value
 
+    @classmethod
+    def get_params_for_derived_class(cls, parent_types):
+        params = super().get_params_for_derived_class(parent_types)
+        params.update({
+            'properties': {},
+            'min_properties': None,
+            'max_properties': None,
+            'additional_properties': True,
+            'discriminator': None,
+            'discriminator_value': None
+        })
+
+        for parent in parent_types:
+            for prop_name, prop in parent.properties.items():
+                if prop_name in params['properties']:
+                    if not check_types_compatible(
+                        params['properties'][prop_name].TYPE,
+                        prop.TYPE
+                    ):
+                        raise RAMLTypeDefError('Incompatible types')
+
+                    params['properties'][prop_name] = prop.__class__(
+                        **prop.__class__.get_params_for_derived_class([
+                            params['properties'][prop_name], prop
+                        ])
+                    )
+                else:
+                    params['properties'][prop_name] = prop
+
+        return params
+
 
 class Union(Any):
     DEFINITION = None
@@ -658,7 +696,12 @@ class Registry:
                 return self.BUILTIN_TYPE_CLASS_MAP[token.value], {}
             else:
                 user_type = self.named_types[token.value]
-                return user_type.__class__, user_type.get_definition()
+                return (
+                    user_type.__class__,
+                    user_type.__class__.get_params_for_derived_class([
+                        user_type
+                    ])
+                )
 
         elif token.kind == Token.ARRAY:
             type_kwargs = {}
@@ -722,7 +765,12 @@ class Registry:
             kwargs['items'] = self.factory(definition['items'])
 
         if type_class is Object and 'properties' in definition:
+            # Тут какой-то ад, наверное надо get_params_for_derived_class
+            # дергать
             kwargs['properties'] = {}
+            if 'properties' in type_kwargs:
+                kwargs['properties'].update(type_kwargs['properties'])
+
             for prop_name, prop_val in definition['properties'].items():
                 extra_kwargs = {}
                 if prop_name[-1] == '?':
