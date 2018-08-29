@@ -113,3 +113,27 @@ def test_object_optional_properties(registry: Registry):
     assert item.properties['login'].required is True
     assert item.properties['name'].required is False
     assert item.properties['question?'].required is False
+
+
+def test_nilable_types(registry: Registry):
+    item = registry.factory('string?')
+    assert type(item) is Union
+    assert {'string', 'nil'} == set([
+        member.DEFINITION for member in item.members
+    ])
+
+    item = registry.factory({'type': 'array', 'items': 'number?'})
+    assert type(item) is Array
+    assert type(item.items) is Union
+    assert {'number', 'nil'} == set([
+        member.DEFINITION for member in item.items.members
+    ])
+
+    item = registry.factory({
+        'properties': {'name': 'integer?'}
+    })
+    assert type(item) is Object
+    assert type(item.properties['name']) is Union
+    assert {'integer', 'nil'} == set([
+        member.DEFINITION for member in item.properties['name'].members
+    ])

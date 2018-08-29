@@ -644,6 +644,16 @@ class Registry:
         if token.kind == Token.SIMPLE:
             if token.value == '':
                 return Any, {}
+            if token.value[-1] == '?':
+                return self._resolve_token(
+                    Token(
+                        kind=Token.UNION,
+                        value=[
+                            Token(kind=token.kind, value=token.value[:-1]),
+                            Token(kind=Token.SIMPLE, value='nil')
+                        ]
+                    )
+                )
             elif token.value in self.BUILTIN_TYPE_CLASS_MAP:
                 return self.BUILTIN_TYPE_CLASS_MAP[token.value], {}
             else:
