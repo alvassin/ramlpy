@@ -1,4 +1,4 @@
-from collections import OrderedDict, defaultdict
+from collections import OrderedDict
 from typing import Union, List, Any, Dict
 
 import yaml
@@ -104,8 +104,8 @@ def parse_method(
                     for response_code, response in value.items():
                         result['responses'][response_code] = {}
                         if isinstance(response, dict):
-                            for response_item, response_value in response.items():
-                                if response_item == 'body':
+                            for resp_item, response_value in response.items():
+                                if resp_item == 'body':
                                     result['responses'][response_code][
                                         'body'
                                     ] = parse_method_body(
@@ -115,7 +115,7 @@ def parse_method(
                                     )
                                 else:
                                     result['responses'][response_code][
-                                        response_item
+                                        resp_item
                                     ] = response_value
             else:
                 result[snake_case(item)] = value
@@ -227,10 +227,12 @@ def parse_resource(resource_name, data, registry, media_types):
     for property, value in data.items():
         if property.startswith('/'):
             resource['resources'][property] = parse_resource(
-                property, value, registry
+                property, value, registry, media_types
             )
         elif property.lower() in HTTP_METHODS:
-            resource['methods'][property] = parse_method(value, registry, media_types)
+            resource['methods'][property] = parse_method(
+                value, registry, media_types
+            )
         else:
             resource[snake_case(property)] = value
 

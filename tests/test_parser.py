@@ -23,11 +23,10 @@ def test_parse_raml():
     ) is typesystem.Object
 
     assert 'get' in resource.methods
+    method = resource.methods['get']
     assert type(
-        resource.methods['get'].responses[200]['body']['application/json']['type']
+        method.responses[200]['body']['application/json']['type']
     ) is typesystem.Array
-
-
 
     resource = doc['/api/v1/ping']
     assert type(resource) is Resource

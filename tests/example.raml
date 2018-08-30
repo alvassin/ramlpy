@@ -58,6 +58,12 @@ types:
         body:
           type: FeedbackMessage[]
 
+  /{id}:
+    get:
+      responses:
+        200:
+          body:
+            type: FeedbackMessage
 
 /some-url:
   get:
