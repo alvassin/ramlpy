@@ -1,4 +1,5 @@
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
+from typing import Union, List, Any, Dict
 
 import yaml
 from ramlpy import typesystem
@@ -42,7 +43,49 @@ def parse_raml_version(header: str) -> str:
     return chunks[1]
 
 
-def parse_method(data, registry: Registry):
+def parse_method_body(
+    body: Dict[str, Any],
+    registry: Registry,
+    default_media_types: Union[List[str], None]
+):
+    result = {}
+
+    if isinstance(body, dict):
+        explicit_media_types = False
+        for item in body.keys():
+            if '/' in item:
+                explicit_media_types = True
+                break
+
+        if explicit_media_types:
+            for media_type, request_body in body.items():
+                result[media_type] = {}
+                if 'type' in request_body:
+                    result[media_type]['type'] = registry.factory(
+                        request_body['type']
+                    )
+        else:
+            # Default media types
+            media_types = []
+            if default_media_types is not None:
+                media_types.extend(default_media_types)
+
+            if not media_types:
+                raise RuntimeError('No media types defined')
+
+            for media_type in media_types:
+                result[media_type] = {}
+                if 'type' in body:
+                    result[media_type]['type'] = registry.factory(body['type'])
+
+    return result
+
+
+def parse_method(
+    data,
+    registry: Registry,
+    default_media_types: Union[List[str], None]
+):
     result = {}
 
     if isinstance(data, dict):
@@ -50,12 +93,30 @@ def parse_method(data, registry: Registry):
             if item == 'is':
                 result['is_'] = value
             elif item == 'body':
-                if 'application/json' in value:
-                    value = registry.factory(
-                        data['body']['application/json']['type']
-                    )
-                    result['body'] = value
-            # FIXME: do not parse responses for a while
+                result['body'] = parse_method_body(
+                    value,
+                    registry,
+                    default_media_types
+                )
+            elif item == 'responses':
+                result['responses'] = {}
+                if isinstance(value, dict):
+                    for response_code, response in value.items():
+                        result['responses'][response_code] = {}
+                        if isinstance(response, dict):
+                            for response_item, response_value in response.items():
+                                if response_item == 'body':
+                                    result['responses'][response_code][
+                                        'body'
+                                    ] = parse_method_body(
+                                        response_value,
+                                        registry,
+                                        default_media_types
+                                    )
+                                else:
+                                    result['responses'][response_code][
+                                        response_item
+                                    ] = response_value
             else:
                 result[snake_case(item)] = value
 
@@ -157,7 +218,7 @@ class Response:
         self.body = body
 
 
-def parse_resource(resource_name, data, registry):
+def parse_resource(resource_name, data, registry, media_types):
     resource = {
         'methods': OrderedDict(),
         'resources': OrderedDict()
@@ -169,7 +230,7 @@ def parse_resource(resource_name, data, registry):
                 property, value, registry
             )
         elif property.lower() in HTTP_METHODS:
-            resource['methods'][property] = parse_method(value, registry)
+            resource['methods'][property] = parse_method(value, registry, media_types)
         else:
             resource[snake_case(property)] = value
 
@@ -185,6 +246,10 @@ def parse(data: str):
 
     data = yaml.safe_load(data)
 
+    media_types = data.get('mediaType')
+    if isinstance(media_types, str):
+        media_types = [media_types]
+
     registry = typesystem.Registry()
     if 'types' in data:
         registry.bulk_register(data['types'])
@@ -193,7 +258,7 @@ def parse(data: str):
     for property_name, value in data.items():
         if property_name.startswith("/"):
             resources[property_name] = parse_resource(
-                property_name, value, registry
+                property_name, value, registry, media_types
             )
 
     document = Document(

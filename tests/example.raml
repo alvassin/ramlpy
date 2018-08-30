@@ -27,6 +27,11 @@ types:
       name: string
       version: string
       latency: object
+  FeedbackMessage:
+    properties:
+      login: string
+      message: string
+
 /ping:
   get:
     responses:
@@ -41,6 +46,18 @@ types:
         body:
           application/json:
             type: AccountOutput
+
+/feedback:
+  post:
+    body:
+      type: FeedbackMessage
+
+  get:
+    responses:
+      200:
+        body:
+          type: FeedbackMessage[]
+
 
 /some-url:
   get:
