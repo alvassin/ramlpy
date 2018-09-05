@@ -561,6 +561,16 @@ class Union(Any):
         else:
             raise RAMLValidationError('All union members failed', errors=errors)
 
+    @classmethod
+    def get_params_for_derived_class(cls, parent_types):
+        if len(parent_types) > 1:
+            raise RAMLTypeDefError('Union can not be multiple inherited')
+
+        params = super().get_params_for_derived_class(parent_types)
+        params['members'] = parent_types[0].members
+
+        return params
+
 
 def check_types_compatible(*types: str) -> bool:
     """
