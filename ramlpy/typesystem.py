@@ -41,6 +41,8 @@ class Any:
         return value
 
     def validate(self, value):
+        value = self.apply_defaults(value)
+
         if self.required and value is None:
             raise RAMLValidationError('Missing value for the required field')
 
@@ -48,6 +50,8 @@ class Any:
             raise RAMLValidationError(
                 'Value %s does not match allowed values' % value
             )
+
+        return value
 
     def get_definition(self) -> typing.Dict[str, typing.Any]:
         """
@@ -101,10 +105,12 @@ class Boolean(Any):
     TYPE = 'any:boolean'
 
     def validate(self, value):
-        super().validate(value)
+        value = super().validate(value)
 
         if value is not None and type(value) is not bool:
             raise RAMLValidationError('Value is expected to be boolean')
+
+        return value
 
 
 class String(Any):
@@ -125,7 +131,7 @@ class String(Any):
         self.max_length = max_length
 
     def validate(self, value):
-        super().validate(value)
+        value = super().validate(value)
 
         if value is None:
             return
@@ -155,6 +161,8 @@ class String(Any):
                         value, self.pattern
                     )
                 )
+
+        return value
 
     @classmethod
     def get_params_for_derived_class(cls, parent_types):
@@ -227,7 +235,7 @@ class Number(Any):
         self.multiple_of = multiple_of
 
     def validate(self, value):
-        super().validate(value)
+        value = super().validate(value)
 
         if value is None:
             return
@@ -257,6 +265,8 @@ class Number(Any):
         if self.format is not None:
             # FIXME: currently not clear in documentation how to validate
             raise NotImplementedError()
+
+        return value
 
     @classmethod
     def get_params_for_derived_class(cls, parent_types):
@@ -304,9 +314,10 @@ class Integer(Number):
         super().__init__(**kwargs)
 
     def validate(self, value):
-        super().validate(value)
+        value = super().validate(value)
         if value is not None and type(value) is not int:
             raise RAMLValidationError('Value is expected to be integer')
+        return value
 
 
 class DateOnly(Any):
@@ -377,7 +388,7 @@ class File(Any):
         self.max_length = max_length
 
     def validate(self, value):
-        super().validate(value)
+        value = super().validate(value)
         raise NotImplementedError()
 
 
@@ -402,7 +413,7 @@ class Array(Any):
         self.max_items = max_items
 
     def validate(self, value):
-        super().validate(value)
+        value = super().validate(value)
 
         if value is None:
             return
@@ -411,8 +422,8 @@ class Array(Any):
             raise RAMLValidationError('Value is expected to be list')
 
         if self.items is not None:
-            for value_item in value:
-                self.items.validate(value_item)
+            for index, value_item in enumerate(value):
+                value[index] = self.items.validate(value_item)
 
         value_length = len(value)
         if (self.max_items is not None) and (value_length > self.max_items):
@@ -430,6 +441,8 @@ class Array(Any):
         if self.unique_items:
             # FIXME: todo
             raise NotImplementedError()
+
+        return value
 
 
 class Object(Any):
@@ -460,18 +473,20 @@ class Object(Any):
         self.discriminator_value = discriminator_value
 
     def validate(self, value):
-        super().validate(value)
+        if type(value) is not dict and type(value) is not None:
+            raise RAMLValidationError('Value is expected to be object')
+
+        value = super().validate(value)
 
         if value is None:
-            return
-
-        if type(value) is not dict:
-            raise RAMLValidationError('Value is expected to be object')
+            return value
 
         errors = {}
         for property_name, property in self.properties.items():
             try:
-                property.validate(value.get(property_name))
+                value[property_name] = property.validate(
+                    value.get(property_name)
+                )
             except RAMLValidationError as error:
                 errors[property_name] = error
 
@@ -498,6 +513,8 @@ class Object(Any):
                     self.max_properties, defined_properties_number
                 )
             )
+
+        return value
 
     def apply_defaults(self, value: typing.Dict[str, typing.Any]):
         for name, property in self.properties.items():
@@ -548,13 +565,12 @@ class Union(Any):
         self.members = members
 
     def validate(self, value):
-        super().validate(value)
+        value = super().validate(value)
 
         errors = []
         for member in self.members:
             try:
-                member.validate(value)
-                break
+                return member.validate(value)
             except RAMLValidationError as error:
                 errors.append(error)
 
