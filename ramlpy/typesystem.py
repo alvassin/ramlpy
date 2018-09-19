@@ -25,7 +25,7 @@ class Any:
         enum: typing.Iterable = None,
         default=None,
         example=None,
-        examples: typing.Mapping[str, typing.Any] = None,
+        examples: typing.Mapping[str, typing.Any] = None
     ):
         self.display_name = display_name
         self.description = description
