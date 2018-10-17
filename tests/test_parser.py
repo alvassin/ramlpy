@@ -12,7 +12,7 @@ def test_parse_raml_version():
 def test_parse_raml():
     doc = load(os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
-        'example.raml'
+        'data/examples/simple.raml'
     ))
 
     assert '/api/v1/feedback' in doc
